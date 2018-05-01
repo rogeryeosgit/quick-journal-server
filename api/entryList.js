@@ -9,78 +9,61 @@ app.use(bodyParser.json());
 module.exports = app;
 
 // Creates  Database
-var inventoryDB = new Datastore({
+var entryListDB = new Datastore({
   filename: "./databases/entryList.db",
   autoload: true
 });
 
-// GET inventory
+// GET entryList
 app.get("/", function(req, res) {
-  res.send("Inventory API");
+  res.send("EntryList API");
 });
-// GET a product from inventory by _id
-app.get("/product/:productId", function(req, res) {
-  if (!req.params.productId) {
+
+// GET an entry from entryList by _id
+app.get("/entry/:entryId", function(req, res) {
+  if (!req.params.entryId) {
     res.status(500).send("ID field is required.");
   } else {
-    inventoryDB.findOne({ _id: req.params.productId }, function(err, product) {
-      res.send(product);
+    entryListDB.findOne({ _id: req.params.entryId }, function(err, entry) {
+      res.send(entry);
     });
   }
 });
-// GET all inventory products
-app.get("/products", function(req, res) {
-  inventoryDB.find({}, function(err, docs) {
-    console.log("sending inventory products");
-    res.send(docs);
+
+// GET all entries
+app.get("/entries", function(req, res) {
+  entryListDB.find({}, function(err, allEntries) {
+    console.log("Listing all entries");
+    res.send(allEntries);
   });
 });
-// Create inventory product
-app.post("/product", function(req, res) {
-  var newProduct = req.body;
-  inventoryDB.insert(newProduct, function(err, product) {
+
+// Create entry
+app.post("/entry", function(req, res) {
+  var newEntry = req.body;
+  entryListDB.insert(newEntry, function(err, entry) {
     if (err) res.status(500).send(err);
-    else res.send(product);
+    else res.send(entry);
   });
 });
-app.delete("/product/:productId", function(req, res) {
-  inventoryDB.remove({ _id: req.params.productId }, function(err, numRemoved) {
+
+// Delete entry
+app.delete("/entry/:entryId", function(req, res) {
+  entryListDB.remove({ _id: req.params.entryId }, function(err, numRemoved) {
     if (err) res.status(500).send(err);
     else res.sendStatus(200);
   });
 });
-// Updates inventory product
-app.put("/product", function(req, res) {
-  var productId = req.body._id;
-  inventoryDB.update({ _id: productId }, req.body, {}, function(
+
+// Updates entry
+app.put("/entry", function(req, res) {
+  var entryId = req.body._id;
+    entryListDB.update({ _id: entryId }, req.body, {}, function(
     err,
     numReplaced,
-    product
+    entry
   ) {
     if (err) res.status(500).send(err);
     else res.sendStatus(200);
   });
 });
-app.decrementInventory = function(products) {
-  async.eachSeries(products, function(transactionProduct, callback) {
-    inventoryDB.findOne({ _id: transactionProduct._id }, function(
-      err,
-      product
-    ) {
-      // catch manually added items (don't exist in inventory)
-      if (!product || !product.quantity_on_hand) {
-        callback();
-      } else {
-        var updatedQuantity =
-          parseInt(product.quantity_on_hand) -
-          parseInt(transactionProduct.quantity);
-        inventoryDB.update(
-          { _id: product._id },
-          { $set: { quantity_on_hand: updatedQuantity } },
-          {},
-          callback
-        );
-      }
-    });
-  });
-};

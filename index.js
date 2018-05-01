@@ -3,9 +3,7 @@ var express = require("express"),
   port = 777,
   app = require("express")(),
   server = http.createServer(app),
-  bodyParser = require("body-parser"),
-  io = require("socket.io")(server),
-  liveCart;
+  bodyParser = require("body-parser");
 
 console.log("Journal Server running");
 console.log("Server started");
@@ -35,25 +33,5 @@ app.get("/", function(req, res) {
 
 app.use('/api/entryList', require("./api/entryList"));
 //app.use("/api/inventory", require("./api/inventory"));
-
-// Websocket logic for Live Cart
-io.on("connection", function(socket) {
-  socket.on("cart-transaction-complete", function() {
-    socket.broadcast.emit("update-live-cart-display", {});
-  });
-  // on page load, show user current cart
-  socket.on("live-cart-page-loaded", function() {
-    socket.emit("update-live-cart-display", liveCart);
-  });
-  // when client connected, make client update live cart
-  socket.emit("update-live-cart-display", liveCart);
-  // when the cart data is updated by the POS
-  socket.on("update-live-cart", function(cartData) {
-    // keep track of it
-    liveCart = cartData;
-    // broadcast updated live cart to all websocket clients
-    socket.broadcast.emit("update-live-cart-display", liveCart);
-  });
-});
 
 server.listen(port, () => console.log(`Listening on port ${port}`));
